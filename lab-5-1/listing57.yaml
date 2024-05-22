@@ -1,0 +1,20 @@
+---
+# Run the playbook listing57.yaml. As you’ve seen before, it generates an error. Fix the error
+# by using the following directions:
+# • What specific information do you obtain when increasing verbosity?
+# • Does it help to perform a syntax check?
+# • Does it help to perform a dry run?
+# • Which module is required to fix this playbook?
+
+- name: install start and enable httpd
+  hosts: all
+  tasks:
+  - name: install package
+    apt:
+      name: apache2
+      state: latest
+  - name: start service
+    service:
+      name: apache2
+      state: started
+      enabled: yes

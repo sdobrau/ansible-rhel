@@ -1,0 +1,39 @@
+---
+
+# Use the RHEL SELinux System Role to manage SELinux properties according to the
+# following requirements:
+# • A Boolean is set to allow SELinux relabeling to be automated using cron.
+# • The directory /var/ftp/uploads is created, permissions are set to 777, and the context label
+# is set to public_content_rw_t.
+# • SELinux should allow web servers to use port 82 instead of port 80.
+# • SELinux is in enforcing state.
+
+- name:
+  hosts: all
+  roles:
+  - role: selinux
+    selinux_state: enforcing
+    selinux_booleans:
+      - name: cron_can_relabel
+        state: true
+    selinux_fcontexts:
+      - target: '/var/ftp/uploads(/.*)?'
+        setype: public_content_rw_t
+        ftype: d
+        state: present
+    selinux_ports:
+      - ports: 82
+        proto: tcp
+        setype: http_port_t
+        state: present
+        local: true
+    vsftpd_anonymous_enable: "YES"
+    vsftpd_local_enable: "YES"
+    vsftpd_write_enable: "YES"
+    vsftpd_anon_upload_enable: "YES"
+  tasks:
+  - name: permissions on ftp directory
+    file:
+      name: /var/ftp/uploads
+      mode: 0777
+      state: directory

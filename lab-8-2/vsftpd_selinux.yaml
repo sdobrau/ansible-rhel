@@ -1,0 +1,63 @@
+---
+- name: install apache2 packages
+  hosts: all
+  vars:
+    vsftpd_anonymous_enable: "YES"
+    vsftpd_local_enable: "YES"
+    vsftpd_write_enable: "YES"
+    vsftpd_anon_upload_enable: "YES"
+  tasks:
+  - name: install vsftpd
+    apt:
+      name: vsftpd
+      state: latest
+  - name: enable vsftpd service
+    service:
+      name: vsftpd
+      state: started
+      enabled: yes
+  - name: open sftp udp
+    ansible.posix.firewalld:
+      port: 115/udp
+      permanent: true
+      immediate: true
+      state: enabled
+  - name: ensure python (debian)
+    apt:
+      name: "python3-firewall"
+      state: latest
+  - name: ensure firewall python module (debian)
+    apt:
+      name: "python3-firewall"
+      state: latest
+  - name: open sftp tcp
+    ansible.posix.firewalld:
+      port: 115/tcp
+      permanent: true
+      immediate: true
+      state: enabled
+  - name: configure vsftpd using template
+    ansible.builtin.template:
+      src: vsftpd_template.j2
+      dest: /etc/vsftpd/vsftpd.conf
+      owner: root
+      group: root
+      mode: '0644'
+  - name: ensure the /var/ftp/pub dir is world-writeable
+    file:
+      path: /var/ftp/pub
+      mode: 0777
+  - name: ensure SELinux is enabled and enforcing
+    selinux:
+      policy: targeted
+      state: enforcing
+  - name: set SELinux context type of /var/ftp/pub to 'public_content_rw_t'
+    sefcontext:
+      target: ’/var/ftp/pub/(/.*)?’
+      setype: public_content_rw_t
+      state: present
+  - name: set boolean ftp_anon_write to true
+    seboolean:
+      name: ftp_anon_write
+      state: yes
+      persistent: yes

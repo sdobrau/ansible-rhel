@@ -1,0 +1,3 @@
+{% for key, value in hostvars %}
+{{ key['value']['address'] }} {{ key['value']['hostname'] }}
+{% endfor %}

@@ -1,0 +1,28 @@
+---
+
+# Write a playbook that uses at least two plays to install a vsftpd service, configure the vsftpd
+# service using templates, and configure permissions as well as SELinux. Apply the following
+# requirements:
+# • Install, start, and enable the vsftpd service. Also, open a port in the firewall to make it
+# accessible.
+# • Use the /etc/vsftpd/vsftpd.conf file to generate a template. In this template, you should use
+# the following variables to configure specific settings. Replace these settings with the
+# variables and leave all else unmodified:
+# • Anonymous_enable: yes
+# • Local_enable: yes
+# • Write_enable: yes
+# • Anon_upload_enable: yes
+# • Set permissions on the /var/ftp/pub directory to mode 0777.
+# • Configure the ftpd_anon_write Boolean to allow anonymous user writes.
+# • Set the public_content_rw_t SELinux context type to the /var/ftp/pub directory.
+# • If any additional tasks are required to get this done, take care of them.
+
+- name: generate hosts file
+  hosts: all
+  tasks:
+  - name: add to hosts
+    lineinfile:
+      dest: /etc/hosts
+      line: "{{ hostvars[item].inventory_hostname }} {{ hostvars[item].ansible_hostname }}"
+      state: present
+    with_items: "{{ groups.all }}"

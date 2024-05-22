@@ -1,0 +1,70 @@
+---
+
+# Write a playbook that meets the following requirements. Use multiple plays in a way that
+# makes sense.
+# • Write a first play that installs the apache2 and mod_ssl packages on host ansible2.
+# • Use variable inclusion to define the package names in a separate file.
+# • Use a conditional to loop over the list of packages to be installed.
+# • Install the packages only if the current operating system is CentOS or RedHat (but not
+# Fedora) version 8.0 or later. If that is not the case, the playbook should fail with the error
+# message “Host hostname does not meet minimal requirements,” where hostname is
+# replaced with the current host name.
+# • On the Ansible control host, create a file /tmp/index.html. This file must have the contents
+# “welcome to my webserver”.
+# • If the file /tmp/index.html is successfully copied to /var/www/html, the web server process
+# must be restarted. If copying the package fails, the playbook should show an error
+# message.
+# • The firewall must be opened for the http as well as the https services.
+
+- name: install apache2 packages
+  hosts: all
+  vars_files:
+    - vars/allvars.yaml
+  tasks:
+  - name: "install {{ item }}"
+    apt:
+      name: "{{ item }}"
+      state: latest
+    loop: "{{ packages }}"
+  - name: report fail (using assert)
+    assert:
+      that: ansible_distribution != CentOS or ansible_distribution != RedHat or ( ansible_distribution != RedHat and ansible_distribution_version != 8 )
+      fail_msg: >
+        "host {{ ansible_facts['hostname'] }} does not meet minimum requirements"
+
+- name: copy and report on /tmp/index.html
+  hosts: all
+  vars_files:
+    - vars/allvars.yaml
+  tasks:
+  - name: copy the file
+    copy:
+      src: /tmp/index.html
+      dest: /var/www/html/
+    register: command_result
+    notify:
+      - restart_web
+  - name: fail and report if copy command failed
+    fail:
+      msg: "Some error"
+      fail_when: command_result.rc != 0
+  handlers:
+  - name: restart_web
+    service:
+      name: apache2
+      state: restarted
+
+- name: set up firewall
+  tasks:
+  - name: open HTTP
+    ansible.posix.firewalld:
+      service: http
+      permanent: true
+      immediate: true
+      state: enabled
+  - name: open HTTPS
+    ansible.posix.firewalld:
+      service: https
+      permanent: true
+      immediate: true
+      state: enabled

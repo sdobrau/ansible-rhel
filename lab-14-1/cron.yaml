@@ -1,0 +1,40 @@
+---
+
+# Write a playbook according to the following specifications:
+# • The cron module must be used to restart your managed servers at 2 a.m. each weekday.
+# • After rebooting, a message must be written to syslog, with the text “CRON initiated reboot
+# just completed.”
+# • The default systemd target must be set to multi-user.target.
+# • The last task should use service facts to show the current version of the cron process.
+
+- name: run a cron job on reboot
+  hosts: all
+  tasks:
+  - name: reboot at 2am each weekday
+    ansible.builtin.cron:
+      name: reboot
+      weekday: "1-5"
+      hour: "2"
+      user: root
+      job: "init 6"
+  - name: special cron message for reboot
+    cron:
+      name: "run on reboot"
+      state: present
+      special_time: reboot
+      job: "CRON initiated reboot just completed"
+  - name: get service facts
+    ansible.builtin.service_facts:
+  - name: debug service facts
+    debug:
+      var: ansible_facts.services
+  # need to use package facts
+  - name: get package
+    ansible.builtin.package_facts:
+      manager: auto
+  - name: debug package facts
+    debug:
+      var: ansible_facts.packages
+  - name: print version of cron process
+    debug:
+      msg: "version of cron process is {{ ansible_facts.packages['cron'][0].version }}"

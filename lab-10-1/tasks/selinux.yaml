@@ -1,0 +1,28 @@
+---
+- name: install required selinux tools
+  apt:
+    pkg:
+      - policycoreutils-python-utils
+      - selinux-policy-default
+      - auditd
+    state: latest
+- name: set permissions for ftp
+  file:
+    path: /var/ftp/pub
+    mode: '0777'
+- name: ensure selinux on and enforcing
+  selinux:
+      policy: default # 'targeted' on Debian is 'default'
+      state: enforcing
+- name: set selinux boolean
+  seboolean:
+    name: ftpd_anon_write
+    state: yes
+    persistent: yes
+- name: manage selinux settings
+  sefcontext:
+    target: '/var/ftp/pub(/.*)?'
+    setype: public_content_rw_t
+    state: present
+  notify:
+    - run restorecon

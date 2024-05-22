@@ -1,0 +1,36 @@
+---
+- name: install vsftpd
+  apt:
+    name: vsftpd
+    state: latest
+- name: ensure /etc/vsftpd directory exists
+  file:
+    state: directory
+    path: /etc/vsftpd/
+    owner: root
+    mode: 0644
+- name: ensure /var/ftp/pub directory exists
+  file:
+    state: directory
+    path: /var/ftp/pub
+    owner: root
+    mode: 0777
+- name: use template to copy FTP config
+  template:
+    src: lab82.j2
+    dest: /etc/vsftpd/vsftpd.conf
+- name: start and enable vsftpd
+  service:
+    name: vsftpd
+    enabled: yes
+    state: started
+- name: install python3-firewall (to ensure working on Debian)
+  apt:
+   name: 'python3-firewall'
+   state: latest
+- name: open port in firewall
+  firewalld:
+    service: ftp
+    permanent: yes
+    immediate: yes
+    state: enabled

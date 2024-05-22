@@ -1,0 +1,32 @@
+---
+
+# • Create users kim, christina, kelly, and bill.
+# • Users kim and kelly must be members of the profs group; users christina and bill are
+# members of the students group.
+# • While creating the users, set the encrypted password to “password”.
+# • Ensure that members of the group profs have sudo privileges.
+
+- name: manage users
+  hosts: all
+  vars:
+    users:
+      - username: kim
+        groups: profs
+      - username: christina
+        groups: profs
+      - username: kelly
+        groups: students
+      - username: bill
+        groups: students
+  tasks:
+  - name: create the users
+    user:
+      name: "{{ item.username }}"
+      password: '$6$mysalt$NN1QGsmCO0hcvplH4ahY6ocho6F6TgcY8yNdMFAeO.LAeFodNPGA6KsQM5Or1AKbE4QKSqnEsC/SE0Zz3ts9y1'
+      groups: "{{ item.groups }}"
+    loop: "{{ users }}"
+  - name: ensure sudoers for profs group
+    lineinfile:
+      path: "/etc/sudoers.d/profs"
+      line: "%profs ALL=(ALL:ALL) PASSWD: ALL"
+      create: true

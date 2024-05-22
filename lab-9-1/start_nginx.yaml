@@ -1,0 +1,12 @@
+---
+- name: start nginx server and ensure http/mysql not installed
+  hosts: all
+  roles:
+  - role: nginxinc.nginx
+  tasks:
+  - name: ensure apache2 and postgresql are not installed
+    apt:
+      pkg:
+        - apache2
+        - mysql
+      state: absent

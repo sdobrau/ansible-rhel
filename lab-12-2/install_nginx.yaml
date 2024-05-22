@@ -1,0 +1,33 @@
+---
+
+# Write a playbook to configure all managed servers according to the following requirements:
+# • All hosts can access the repository that was created in Lab 12-1.
+# • Have the same playbook install the nginx package.
+# • Do NOT start the service. Use the appropriate module to gather information about the
+# installed nginx package, and let the playbook print a message stating the name of the nginx
+# package as well as the version.
+
+- name: repo and nginx
+  hosts: all
+  tasks:
+  - name: setup remote repo
+    # All hosts can access the repository that was created in Lab 12-1.
+    yum_repository:
+      name: remote_repo
+      description: RHCE8 exercise 122 repo
+      file: remote_repo
+      baseurl: ftp://myrepohost/repo/ # whatever IP address
+      gpgcheck: no
+  - name: ensure the host is resolvable
+    lineinfile:
+      path: /etc/hosts
+      line: 192.168.122.180 myrepohost
+  - name: install nginx
+    apt:
+      name: nginx
+      state: latest
+  - name: describe package
+    debug:
+      msg: >
+        "name: ansible_facts.packages[nginx]['name']\n
+         version: ansible_facts.packages[nginx]['version']"

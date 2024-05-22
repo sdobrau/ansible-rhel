@@ -1,0 +1,6 @@
+[packages]
+smb_package = samba
+ftp_package = vsftpd
+db_package = mariadb
+web_package = apache2
+firewall_package = firewalld

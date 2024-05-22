@@ -1,0 +1,43 @@
+---
+
+# Configure the control.example.com host as a repository server, according to the following
+# requirements:
+# • Create a directory with the name /repo, and in that directory copy all packages that have a
+# name starting with nginx.
+# • Generate the metadata that makes this directory a repository.
+# • Configure the Apache web server to provide access to the repository server. You just
+# have to make sure that the DocumentRoot in Apache is going to be set to the /repo
+# directory.
+
+- name: repository server setup
+  hosts: all
+  tasks:
+  - name: create repo directory
+    file:
+      state: directory
+      mode: 0644
+      path: /repo
+  - name: install all nginx packages to repo
+    apt:
+      # TODO: dependency issues. just install nginx for the purposes of this lab
+      name: nginx
+      state: latest
+      # TODO: not supported for apt
+      # download_only: yes
+      # download_dir: /repo
+  - name: generate repo metadata
+    command: "createrepo /repo"
+  - name: install apache2 package
+    apt:
+      name: apache2
+      state: latest
+  - name: configure apache2
+    lineinfile:
+      path: /etc/httpd/conf/httpd.conf
+      regexp: '^DocumentRoot "/var/www/html"'
+      line: 'DocumentRoot "/repo"'
+  - name: start apache2 service
+    service:
+      name: apache2
+      state: started
+      enabled: yes

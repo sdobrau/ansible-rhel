@@ -1,0 +1,25 @@
+---
+
+# Write a playbook that cleans up the second hard disks on all hosts that have been modified
+# in this chapter.
+
+- name: remove partitions from /dev/sdb if present
+  hosts: all
+  tasks:
+  - name: fail if no /dev/sdb present
+    fail:
+      msg: "no /dev/sdb found"
+    when: ansible_facts['ansible_devices']['sdb'] is not defined
+    failed_when:
+  - name: reformat /dev/sdb
+    parted:
+      device: /dev/sdb
+  - name: Read device information (always use unit when probing)
+    parted: device=/dev/sdb unit=MiB
+    register: sdb_info
+  - name: remove all partitions from /dev/sdb
+    parted:
+      device: /dev/sdb
+      number: '{{ item.num }}'
+      state: absent
+      loop: '{{ sdb_info.partitions }}'

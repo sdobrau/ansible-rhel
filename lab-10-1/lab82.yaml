@@ -1,0 +1,26 @@
+---
+
+# The lab82.yaml file, which you can find in the GitHub repository that goes with this course,
+# is an optimal candidate for optimization. Optimize this playbook according to the following
+# requirements:
+# • Use includes and import to make this a modular playbook where different files are used to
+# distinguish between the different tasks.
+# • Optimize this playbook such that it will run on no more than two hosts at the same time
+# and completes the entire playbook on these two hosts before continuing with the next host.
+
+- name: install vsftpd
+  hosts: all
+  serial: 2
+  tasks:
+  - name: manage vsftpd
+    import_tasks: tasks/vsftpd.yaml
+    vars:
+      vsftpd_anonymous_enable: yes
+      vsftpd_local_enable: yes
+      vsftpd_write_enable: yes
+      vsftpd_anon_upload_enable: yes
+  - name: manage selinux
+    import_tasks: tasks/selinux.yaml
+  handlers:
+  - name: run restorecon
+    command: restorecon -vR /var/ftp/pub

@@ -1,0 +1,109 @@
+---
+
+# After copying over the facts files, create a playbook that uses the facts to set up the rest of
+# the environment. Make sure it meets the following requirements:
+# • Use a variable inclusion file with the name allvars.yaml and set the following variables:
+# web_root = /var/www/html
+# ftp_root = /var/ftp
+# • Create a playbook that sets up the file services and the web services. Also ensure the
+# playbook opens the firewalld firewall to provide access to these servers.
+# • Make sure the webservice provides access to a file index.html, which contains the text
+# “Welcome to the Ansible Web Server.”
+# • Run the playbook and use ad hoc commands to verify that the services have been
+# started.
+
+- name: copy custom facts
+  hosts: all
+  vars_files:
+    - /vars/allvars.yaml
+  vars:
+    fact_files:
+      - custom_facts
+      - custom_facts_2
+  tasks:
+  - name: create the custom facts directory
+    file:
+      state: directory
+      recurse: yes
+      path: /etc/ansible/facts.d
+  - name: copy the custom facts
+    copy:
+      src: "{{ item }}"
+      dest: "/etc/ansible/facts.d/{{ item }}.fact"
+    with_items: "{{ fact_files }}"
+  - name: copy the web file
+    copy:
+      src: "apache2_web_file"
+      dest: "{{ web_root }}/index.html"
+
+- name: create everything else
+  hosts: all
+  tasks:
+  - name: "install {{ ansible_local['custom_facts']['packages']['ftp_package'] }}"
+    apt:
+      name: "{{ ansible_local['custom_facts']['packages']['ftp_package'] }}"
+      state: latest
+  - name: "enable {{ ansible_local['custom_facts_2']['services']['ftp_service'] }}"
+    service:
+      name: "{{ ansible_local['custom_facts_2']['services']['ftp_service'] }}"
+      state: started
+      enabled: yes
+  - name: "install {{ ansible_local['custom_facts']['packages']['web_package'] }}"
+    apt:
+      name: "{{ ansible_local['custom_facts']['packages']['web_package'] }}"
+      state: latest
+  - name: "enable {{ ansible_local['custom_facts_2']['services']['web_service'] }} service"
+    service:
+      name: "{{ ansible_local['custom_facts_2']['services']['web_service'] }}"
+      state: started
+      enabled: yes
+  - name: "install {{ ansible_local['custom_facts']['packages']['smb_package'] }}"
+    apt:
+      name: "{{ ansible_local['custom_facts']['packages']['smb_package'] }}"
+      state: latest
+  - name: "enable {{ ansible_local['custom_facts_2']['services']['smb_service'] }} service"
+    service:
+      name: "{{ ansible_local['custom_facts_2']['services']['smb_service'] }}"
+      state: started
+      enabled: yes
+  - name: "install {{ ansible_local['custom_facts']['packages']['firewall_package'] }}"
+    apt:
+      name: "{{ ansible_local['custom_facts']['packages']['firewall_package'] }}"
+      state: latest
+  - name: "install python3-firewall (to ensure working on Debian)"
+    apt:
+      name: "python3-firewall"
+      state: latest
+  - name: "enable {{ ansible_local['custom_facts_2']['services']['firewall_service'] }} service"
+    service:
+      name: "{{ ansible_local['custom_facts_2']['services']['firewall_service'] }}"
+      state: started
+      enabled: yes
+  - name: open HTTP port
+    ansible.posix.firewalld:
+      service: http
+      immediate: true
+      state: enabled
+  - name: open FTP ports
+    ansible.posix.firewalld:
+      service: sftp
+      immediate: true
+      state: enabled
+  - name: open Samba ports 1
+    ansible.posix.firewalld:
+      port: 137/udp
+      permanent: true
+      immediate: true
+      state: enabled
+  - name: open Samba ports 2
+    ansible.posix.firewalld:
+      port: 137/tcp
+      permanent: true
+      immediate: true
+      state: enabled
+  - name: open Samba ports 3
+    ansible.posix.firewalld:
+      port: 445/tcp
+      permanent: true
+      immediate: true
+      state: enabled

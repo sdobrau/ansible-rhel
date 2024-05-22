@@ -1,0 +1,80 @@
+---
+
+# The lesson11-lab.yaml playbook contains some errors. Fix them according to the following
+# instructions:
+# • Use command-line tools and arguments to find the errors. Don’t fix them by just reading
+# the YAML file, even if some errors are obvious.
+# • After fixing an error in one task, start running the playbook with the next task. Try to avoid
+# running the same task over and over again.
+# • Before applying the template, use a dry-run and a diff to see what the template will
+# change.
+# • Use the debug module where necessary.
+
+- name: Managing web server SELinux properties
+  hosts: all
+  vars:
+    ansible_python_interpreter: /usr/bin/python3
+    package: apache2
+    service: apache2
+    message: "warning: authorized use only"
+  tasks:
+  - name: ensure SELinux is enabled and enforcing
+    selinux:
+      policy: default
+      state: enforcing
+  - name: install the webserver
+    apt:
+      name: "{{ package }}"
+      state: latest
+  - name: start and enable the webserver
+    service:
+      name: "{{ service }}"
+      state: started
+      enabled: yes
+  # - name: open the firewall service
+  #   # TODO: fails on Debian
+  #   ansible.posix.firewalld:
+  #     service: http
+  #     immediate: true
+  #     permanent: true
+  #     state: enabled
+  - name: create the /web directory
+    file:
+      path: /web
+      state: directory
+      mode: 0777
+  - name: create the index.html file in /web
+    copy:
+      src: index.html
+      dest: /web/index.html
+      mode: 0644
+  - name: ensure httpd directory exists
+    file:
+      path: /etc/httpd/conf/
+      state: directory
+      recurse: true
+      mode: 0644
+  - name: use lineinfile to change webserver configuration
+    lineinfile:
+      create: true
+      path: /etc/httpd/conf/httpd.conf
+      regexp: '^DocumentRoot "/var/www/html"'
+      line: 'DocumentRoot "/web"'
+  - name: use lineinfile to change webserver security
+    lineinfile:
+      create: true
+      path: /etc/httpd/conf/httpd.conf
+      regexp: '^<Directory "/var/www">'
+      line: '<Directory "/web">'
+  - name: use sefcontext to set context on new documentroot
+    sefcontext:
+      target: '/web(/.*)?'
+      setype: httpd_sys_content_t
+      state: present
+  - name: run the restorecon command
+    command: restorecon -Rv /web
+  - name: allow the web server to run user content
+    seboolean:
+      name: httpd_read_user_content
+      state: yes
+      persistent: yes
